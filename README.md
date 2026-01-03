@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Leave-Tracker
 this project was built to make tool to track the leaves of employees in a company.
 =======
@@ -335,4 +334,3 @@ If you are developing a production application, we recommend using TypeScript wi
 =======
 Leave tracking website where on request the admins can log in and track the granted leaves by a company in a year. 
 35 in a year.
->>>>>>> ec5b2a3 (Update README with leave tracking feature description)

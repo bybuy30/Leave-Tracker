@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Rubik+80s+Fade&family=Rubik+Glitch&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Science+Gothic:wght@400;700&display=swap');
+
+#root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .hide-on-mobile {
+    display: none;
+  }
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.font-bungee-inline {
+  font-family: 'Bungee Inline', sans-serif;
+}
+
+.font-science-gothic {
+  font-family: 'Science Gothic', sans-serif;
+}

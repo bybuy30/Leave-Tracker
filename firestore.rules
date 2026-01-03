@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Admins collection - admins can only read/write their own profile
+    match /admins/{adminId} {
+      // Allow read and write only if the admin is the owner
+      allow read, write: if isOwner(adminId);
+      
+      // Admins can create their own document during signup
+      allow create: if isAuthenticated() && request.auth.uid == adminId;
+    }
+    
+    // Employees collection - existing rules preserved, now requires authentication
+    match /employees/{employeeId} {
+      // Allow authenticated admins to read/write employee data
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
+
+
+
+

@@ -19,7 +19,7 @@ import { LEAVE_TYPE_ALLOCATION, TOTAL_LEAVE_ALLOCATION, shouldStartNewCycle } fr
 
 const buildDefaultLeaves = () => ({
   sick: { taken: 0, quota: LEAVE_TYPE_ALLOCATION.sick },
-  casual: { taken: 0, quota: LEAVE_TYPE_ALLOCATION.casual },
+  annual: { taken: 0, quota: LEAVE_TYPE_ALLOCATION.annual },
   public: { taken: 0, quota: LEAVE_TYPE_ALLOCATION.public },
 });
 
@@ -304,35 +304,53 @@ export const logLeaveToFirestore = async (employeeId, leaveLog) => {
   }
 };
 
-// ... (in utils/firebaseHelpers.js)
-
 /**
  * Allocate leave to an employee and append a leave log.
  * Enforces one leave per employee per day using a Firestore transaction check.
  * @param {string} employeeId
- * @param {'sick'|'casual'|'public'} leaveType
+ * @param {'sick'|'annual'|'public'} leaveType
  * @param {string} dateKey - The YYYY-MM-DD date string for the leave
  * @param {string} adminId - Admin UID to verify ownership
+ * @param {string} holidayDescription - Optional description for public holidays
  * @returns {Promise<void>}
  */
-export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, adminId) => {
+
+export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, adminId, holidayDescription, consecutiveDays = 1) => {
   if (!employeeId || !leaveType || !dateKey) {
     throw new Error("Missing employeeId, leaveType, or dateKey.");
   }
   if (!adminId) {
     throw new Error("Admin ID is required to allocate leave.");
   }
+  if (consecutiveDays < 1) {
+    throw new Error("Consecutive days must be at least 1.");
+  }
 
   const employeeRef = doc(db, "employees", employeeId);
-  const now = new Date(); // Used for the log timestamp (time of allocation)
+  const now = new Date();
   
+  // Create a single log entry with the total duration
   const logEntry = {
     id: getRandomId(),
     type: leaveType,
-    date: dateKey, // Use the selected date
-    timestamp: now.toISOString(), // Time of allocation
-    duration: 1,
+    date: dateKey,
+    timestamp: now.toISOString(),
+    duration: consecutiveDays,
   };
+  
+  if (leaveType === 'public' && holidayDescription) {
+    logEntry.holidayDescription = holidayDescription;
+  }
+  
+  // Generate dates for heatmap update
+  const heatmapDates = [];
+  const startDate = new Date(dateKey);
+  for (let i = 0; i < consecutiveDays; i++) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() + i);
+    const currentDateKey = currentDate.toISOString().split('T')[0];
+    heatmapDates.push(currentDateKey);
+  }
 
   try {
     await runTransaction(db, async (transaction) => {
@@ -351,13 +369,21 @@ export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, ad
         ? [...data.leaveLogs]
         : [];
       
-      // CRITICAL FIX: DATE DUPLICATION CHECK (Inside Transaction for Atomicity)
-      const isDuplicate = existingLogs.some(log => log.date === dateKey);
-
-      if (isDuplicate) {
-        // Block allocation if date is already used by this employee
+      const datesInRange = heatmapDates;
+      const conflictingDates = datesInRange.filter(date => 
+        existingLogs.some(log => {
+          // For multi-day logs, check if date falls within the range
+          const logStart = new Date(log.date);
+          const logEnd = new Date(logStart);
+          logEnd.setDate(logEnd.getDate() + (log.duration - 1));
+          const checkDate = new Date(date);
+          return checkDate >= logStart && checkDate <= logEnd;
+        })
+      );
+      
+      if (conflictingDates.length > 0) {
         throw new Error(
-          `Leave already allocated for ${dateKey}. Only one leave is allowed per day.`
+          `Leave already allocated for ${conflictingDates.join(', ')}. Only one leave is allowed per day.`
         );
       }
       
@@ -375,16 +401,20 @@ export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, ad
       }
       
       const targetLeave = currentLeaves[leaveType];
-
-      if (targetLeave.taken >= targetLeave.quota) {
-        throw new Error(`No remaining ${leaveType} leaves available.`);
+      const leavesNeeded = consecutiveDays;
+      const leavesAvailable = targetLeave.quota - targetLeave.taken;
+      
+      if (leavesNeeded > leavesAvailable) {
+        throw new Error(
+          `Cannot allocate ${leavesNeeded} consecutive ${leaveType} leaves. Only ${leavesAvailable} remaining.`
+        );
       }
 
       const updatedLeaves = {
         ...currentLeaves,
         [leaveType]: {
           ...targetLeave,
-          taken: targetLeave.taken + 1,
+          taken: targetLeave.taken + consecutiveDays,
         },
       };
 
@@ -398,16 +428,18 @@ export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, ad
       const leavesRemaining = Math.max(totalLeaves - totalTaken, 0);
 
       const existingHeatmap = data.leaveHeatmap || {};
-      const currentDay = existingHeatmap[logEntry.date] || { total: 0 };
-      const updatedDay = {
-        ...currentDay,
-        total: (currentDay.total || 0) + 1,
-        [leaveType]: (currentDay[leaveType] || 0) + 1,
-      };
-      const updatedHeatmap = {
-        ...existingHeatmap,
-        [logEntry.date]: updatedDay,
-      };
+      const updatedHeatmap = { ...existingHeatmap };
+      
+      // Update heatmap for each consecutive day
+      heatmapDates.forEach((dateStr) => {
+        const currentDay = existingHeatmap[dateStr] || { total: 0 };
+        const updatedDay = {
+          ...currentDay,
+          total: (currentDay.total || 0) + 1,
+          [leaveType]: (currentDay[leaveType] || 0) + 1,
+        };
+        updatedHeatmap[dateStr] = updatedDay;
+      });
 
       transaction.update(employeeRef, {
         leaves: updatedLeaves,

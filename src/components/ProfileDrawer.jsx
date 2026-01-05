@@ -10,14 +10,14 @@ export const ProfileDrawer = ({ employee, isOpen, onClose, onAllocateLeave, onRe
   const getLeaveTakenStats = () => {
     const stats = {
       sick: employee.leaveBreakdown?.sick?.used || 0,
-      casual: employee.leaveBreakdown?.casual?.used || 0,
+      annual: employee.leaveBreakdown?.annual?.used || 0,
       public: employee.leaveBreakdown?.public?.used || 0,
     };
     return stats;
   };
 
   const leaveTaken = getLeaveTakenStats();
-  const maxLeaveValue = Math.max(leaveTaken.sick, leaveTaken.casual, leaveTaken.public) || 1;
+  const maxLeaveValue = Math.max(leaveTaken.sick, leaveTaken.annual, leaveTaken.public) || 1;
 
   return (
     <>
@@ -119,7 +119,7 @@ export const ProfileDrawer = ({ employee, isOpen, onClose, onAllocateLeave, onRe
                   const colors = leaveTypeColors[type];
                   const percentage = (value / maxLeaveValue) * 100;
                   const labels = {
-                    casual: 'Casual',
+                    annual: 'Annual',
                     sick: 'Sick',
                     public: 'Public',
                   };
@@ -145,11 +145,11 @@ export const ProfileDrawer = ({ employee, isOpen, onClose, onAllocateLeave, onRe
           {activeTab === 'breakdown' && (
             <div className="space-y-4 mb-8">
               <h4 className="font-semibold text-gray-900">Leave Type Breakdown</h4>
-              {['casual', 'sick', 'public'].map(type => {
+              {['annual', 'sick', 'public'].map(type => {
                 const breakdown = employee.leaveBreakdown?.[type];
                 const colors = leaveTypeColors[type];
                 const labels = {
-                  casual: 'Casual Leaves',
+                  annual: 'Annual Leaves',
                   sick: 'Sick Leaves',
                   public: 'Public Holidays',
                 };

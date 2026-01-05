@@ -43,9 +43,9 @@ export const EmployeesTable = ({ employees, onRowClick, searchTerm = '', onDelet
   const calculateTotalLeavesRemaining = (employee) => {
     if (!employee.leaves) return 0;
     const sick = (employee.leaves.sick?.quota || 10) - (employee.leaves.sick?.taken || 0);
-    const casual = (employee.leaves.casual?.quota || 12) - (employee.leaves.casual?.taken || 0);
+    const annual = (employee.leaves.annual?.quota || 12) - (employee.leaves.annual?.taken || 0);
     const pub = (employee.leaves.public?.quota || 12) - (employee.leaves.public?.taken || 0);
-    return sick + casual + pub;
+    return sick + annual + pub;
   };
 
   return (

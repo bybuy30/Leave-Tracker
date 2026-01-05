@@ -1,44 +1,63 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { MAX_CONTINUOUS_LEAVE } from '../utils/leaveConfig';
 
 const leaveOptions = [
   { value: 'sick', label: 'Sick Leave' },
-  { value: 'casual', label: 'Casual Leave' },
+  { value: 'annual', label: 'Annual Leave' },
   { value: 'public', label: 'Public Holiday' },
 ];
 
 // Helper to get today's date in YYYY-MM-DD format for the date input default
 const getTodayDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    // Get month and day, ensuring they are padded with a leading zero if needed
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const today = new Date();
+  const year = today.getFullYear();
+  // Get month and day, ensuring they are padded with a leading zero if needed
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export const AllocateLeaveModal = ({ isOpen, onClose, onSubmit, loading, error }) => {
   const [selectedType, setSelectedType] = useState('sick');
-  // ⭐️ NEW STATE: To hold the date selected by the user
+  // NEW STATE: To hold the date selected by the user
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
+  // NEW STATE: To hold optional public holiday description
+  const [holidayName, setHolidayName] = useState('');
+
+  const [duration, setDuration] = useState(1);
 
   useEffect(() => {
     if (!isOpen) {
       setSelectedType('sick');
       // ⭐️ Reset the date when the modal closes
-      setSelectedDate(getTodayDateString()); 
+      setSelectedDate(getTodayDateString());
+      // Reset public holiday name when modal closes
+      setHolidayName('');
+      setDuration(1);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (!selectedType || !selectedDate) return;
-    
-    // ⭐️ PASS BOTH TYPE AND DATE TO THE PARENT FUNCTION
-    onSubmit?.(selectedType, selectedDate); 
+const handleSubmit = (event) => {
+  event.preventDefault();
+  if (!selectedType || !selectedDate || duration < 1) return;
+  
+  if (selectedType === 'public' && !holidayName.trim()) {
+    return;
+  }
+  
+  if (duration > MAX_CONTINUOUS_LEAVE[selectedType]) {
+    return;
+  }
+  
+  const meta = { 
+    holidayName: selectedType === 'public' ? holidayName : null,
+    duration: duration
   };
+  onSubmit?.(selectedType, selectedDate, meta); 
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -55,24 +74,24 @@ export const AllocateLeaveModal = ({ isOpen, onClose, onSubmit, loading, error }
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="leave-date">Leave Date</label>
             <input
-                id="leave-date"
-                type="date"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                className="input-field"
-                disabled={loading}
-                required
+              id="leave-date"
+              type="date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+              className="input-field"
+              disabled={loading}
+              required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="leave-type">Leave Type</label>
             <select
-                id="leave-type"
-                value={selectedType}
-                onChange={(event) => setSelectedType(event.target.value)}
-                className="input-field"
-                disabled={loading}
+              id="leave-type"
+              value={selectedType}
+              onChange={(event) => setSelectedType(event.target.value)}
+              className="input-field"
+              disabled={loading}
             >
               {leaveOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -82,6 +101,38 @@ export const AllocateLeaveModal = ({ isOpen, onClose, onSubmit, loading, error }
             </select>
           </div>
 
+          {/* ⭐️ Conditional holiday description input for Public Holiday type */}
+          {selectedType === 'public' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="holiday-name">Holiday Description</label>
+              <input
+                id="holiday-name"
+                type="text"
+                value={holidayName}
+                onChange={(e) => setHolidayName(e.target.value)}
+                placeholder="e.g., New Year's Day"
+                className="input-field"
+                disabled={loading}
+                required
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Number of Days</label>
+            <input
+              type="number"
+              min="1"
+              max={MAX_CONTINUOUS_LEAVE[selectedType]}
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value) || 1)}
+              className="input-field"
+              disabled={loading}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Max allowed for {selectedType}: {MAX_CONTINUOUS_LEAVE[selectedType]} days
+            </p>
+          </div>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg">
               {error}

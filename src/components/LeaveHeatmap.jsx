@@ -6,7 +6,7 @@ const INTENSITY_CLASSES = [
   'bg-[#212338] border-[#212338]',
 ];
 
-const HOLIDAY_CLASS = 'bg-green-500 border-green-600';
+const HOLIDAY_CLASS = 'bg-[#212338] border-[#212338]';
 
 const DAYS_IN_WEEK = 7;
 const TOTAL_WEEKS = 54; 
@@ -49,7 +49,7 @@ const mergeHeatmapSources = (heatmapData = {}, leaveLogs = []) => {
     if (!rawDate) return;
     const dateKey = rawDate.split('T')[0];
     const duration = log.duration || 1;
-    const type = log.type || 'casual';
+    const type = log.type || 'annual';
     const current = map.get(dateKey) || { total: 0, types: {} };
     // Only count non-holiday leaves in total
     if (type !== 'public') {
@@ -135,7 +135,7 @@ export const LeaveHeatmap = ({ leaveLogs = [], heatmapData = {}, year = new Date
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="flex flex-col gap-1">
               {week.map((day) => {
-                const isHoliday = day.types?.public && !day.types?.sick && !day.types?.casual;
+                const isHoliday = day.types?.public && !day.types?.sick && !day.types?.annual;
                 const level = isHoliday ? 0 : getIntensityLevel(day.total);
                 const isCurrentYear = day.date.getUTCFullYear() === year;
                 const cellClass = isHoliday 

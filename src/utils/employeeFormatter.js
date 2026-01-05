@@ -11,7 +11,7 @@ const ensureLeaveCategory = (leaves = {}, type) => {
 const normalizeLeaveStructure = (leaves = {}) => {
   const normalized = {
     sick: ensureLeaveCategory(leaves, 'sick'),
-    casual: ensureLeaveCategory(leaves, 'casual'),
+    annual: ensureLeaveCategory(leaves, 'annual'),
     public: ensureLeaveCategory(leaves, 'public'),
   };
 
@@ -24,10 +24,10 @@ const buildLeaveBreakdown = (leaves) => ({
     remaining: Math.max(leaves.sick.quota - leaves.sick.taken, 0),
     total: leaves.sick.quota,
   },
-  casual: {
-    used: leaves.casual.taken,
-    remaining: Math.max(leaves.casual.quota - leaves.casual.taken, 0),
-    total: leaves.casual.quota,
+  annual: {
+    used: leaves.annual.taken,
+    remaining: Math.max(leaves.annual.quota - leaves.annual.taken, 0),
+    total: leaves.annual.quota,
   },
   public: {
     used: leaves.public.taken,
@@ -39,21 +39,32 @@ const buildLeaveBreakdown = (leaves) => ({
 const formatLogs = (logs = []) => {
   return logs.map((log, index) => {
     const timestamp = log.timestamp || log.date || log.createdAt;
+
     return {
       id: log.id || `${log.type || 'leave'}-${index}`,
-      type: log.type || 'casual',
-      date: log.date || (timestamp ? new Date(timestamp).toISOString().split('T')[0] : null),
+      type: log.type || 'annual',
+      date:
+        log.date ||
+        (timestamp
+          ? new Date(timestamp).toISOString().split("T")[0]
+          : null),
       timestamp: timestamp || null,
       duration: log.duration || log.hours || 1,
+
+      // 🔥 FIX — PRESERVE HOLIDAY DESCRIPTION
+      holidayDescription: log.holidayDescription ?? null,
+
+      // keep meta if you need it
       meta: log.meta || null,
     };
   });
 };
 
+
 // Define a constant for the desired default quotas
 const DEFAULT_LEAVE_QUOTAS = {
   sick: { quota: 3, taken: 0 },
-  casual: { quota: 20, taken: 0 },
+  annual: { quota: 20, taken: 0 },
   public: { quota: 12, taken: 0 },
 };
 
@@ -68,9 +79,9 @@ export const formatEmployee = (employee) => {
       quota: DEFAULT_LEAVE_QUOTAS.sick.quota,
       taken: employeeLeaves?.sick?.taken ?? 0,
     },
-    casual: {
-      quota: DEFAULT_LEAVE_QUOTAS.casual.quota,
-      taken: employeeLeaves?.casual?.taken ?? 0,
+    annual: {
+      quota: DEFAULT_LEAVE_QUOTAS.annual.quota,
+      taken: employeeLeaves?.annual?.taken ?? 0,
     },
     public: {
       quota: DEFAULT_LEAVE_QUOTAS.public.quota,
@@ -81,8 +92,8 @@ export const formatEmployee = (employee) => {
   const leaveBreakdown = buildLeaveBreakdown(leaves);
 
   // Recalculate totals based on the fixed quotas
-  const totalQuota = leaves.sick.quota + leaves.casual.quota + leaves.public.quota;
-  const totalTaken = leaves.sick.taken + leaves.casual.taken + leaves.public.taken;
+  const totalQuota = leaves.sick.quota + leaves.annual.quota + leaves.public.quota;
+  const totalTaken = leaves.sick.taken + leaves.annual.taken + leaves.public.taken;
 
   // 2. FIX: Use totalQuota directly as the fallback for totalLeaves.
   const totalLeaves = typeof employee.totalLeaves === 'number' ? employee.totalLeaves : totalQuota;
@@ -123,8 +134,8 @@ export const buildLeaveSummaries = (employee) => {
   const formatted = formatEmployee(employee);
   if (!formatted) {
     return {
-      taken: { sick: 0, casual: 0, public: 0 },
-      remaining: { sick: 0, casual: 0, public: 0 },
+      taken: { sick: 0, annual: 0, public: 0 },
+      remaining: { sick: 0, annual: 0, public: 0 },
     };
   }
 

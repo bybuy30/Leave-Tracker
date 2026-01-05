@@ -2,9 +2,15 @@ export const TOTAL_LEAVE_ALLOCATION = 35;
 export const CYCLE_DAYS = 365;
 
 export const LEAVE_TYPE_ALLOCATION = {
-  sick: 12,
-  casual: 12,
-  public: 11,
+  sick: 3,
+  annual: 20,
+  public: 12,
+};
+
+export const MAX_CONTINUOUS_LEAVE = {
+  sick: 3,
+  annual: 20,
+  public: 12,
 };
 
 export const LEAVE_TYPES = Object.keys(LEAVE_TYPE_ALLOCATION);

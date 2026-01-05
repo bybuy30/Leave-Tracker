@@ -2,20 +2,20 @@ import React from 'react';
 
 const LABELS = {
   sick: 'Sick',
-  casual: 'Casual',
+  annual: 'Annual',
   public: 'Public Holidays',
 };
 
 const COLORS = {
   sick: 'bg-red-500',
-  casual: 'bg-blue-500', // This is the active color based on the image
+  annual: 'bg-blue-500', // This is the active color based on the image
   public: 'bg-green-500',
 };
 
 // Assuming 'font-science-gothic' is configured to use the desired font.
 const FONT_CLASS = 'font-sans text-lg tracking-wider'; 
 
-export const LeaveBarChart = ({ data = { sick: 0, casual: 1, public: 0 } }) => {
+export const LeaveBarChart = ({ data = { sick: 0, annual: 1, public: 0 } }) => {
   const entries = Object.entries(data);
   const total = Math.max(
     1,

@@ -2,7 +2,7 @@ import React from 'react';
 
 const leaveTypeColors = {
   sick: { bg: 'bg-red-50', dot: 'bg-red-500' },
-  casual: { bg: 'bg-blue-50', dot: 'bg-blue-500' },
+  annual: { bg: 'bg-blue-50', dot: 'bg-blue-500' },
   public: { bg: 'bg-green-50', dot: 'bg-green-500' },
 };
 
@@ -10,11 +10,11 @@ export const LeavePolicyCards = () => {
   // Static company leave policy - constant values
   const leavePolicy = {
     sick: 3,
-    casual: 20,
+    annual: 20,
     public: 12,
   };
 
-  const totalAllowed = leavePolicy.sick + leavePolicy.casual + leavePolicy.public;
+  const totalAllowed = leavePolicy.sick + leavePolicy.annual + leavePolicy.public;
 
   const LeaveCard = ({ type, title, days }) => {
     const colors = leaveTypeColors[type];
@@ -62,7 +62,7 @@ export const LeavePolicyCards = () => {
         {/* Leave Type Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <LeaveCard type="sick" title="Sick Leaves" days={leavePolicy.sick} />
-          <LeaveCard type="casual" title="Casual Leaves" days={leavePolicy.casual} />
+          <LeaveCard type="annual" title="Annual Leaves" days={leavePolicy.annual} />
           <LeaveCard type="public" title="Public Holidays" days={leavePolicy.public} />
         </div>
       </div>

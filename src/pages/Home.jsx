@@ -46,7 +46,7 @@ function HomePage() {
       totalLeaves: TOTAL_LEAVE_ALLOCATION,
       leaves: {
         sick: { quota: LEAVE_TYPE_ALLOCATION.sick, taken: 0 },
-        casual: { quota: LEAVE_TYPE_ALLOCATION.casual, taken: 0 },
+        annual: { quota: LEAVE_TYPE_ALLOCATION.annual, taken: 0 },
         public: { quota: LEAVE_TYPE_ALLOCATION.public, taken: 0 },
       },
       leavesUsed: 0,

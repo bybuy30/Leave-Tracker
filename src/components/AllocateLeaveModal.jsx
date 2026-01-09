@@ -54,7 +54,7 @@ export const AllocateLeaveModal = ({ isOpen, onClose, onSubmit, loading, error }
 const handleDateChange = (newDate) => {
   setSelectedDate(newDate);
   if (isWeekend(newDate)) {
-    setDateError('Weekends (Saturday and Sunday) cannot be selected. Please choose a weekday.');
+    setDateError('Weekends cannot be selected. Please choose a weekday.');
   } else {
     setDateError('');
   }
@@ -68,7 +68,7 @@ const handleSubmit = (event) => {
   
   // Check if selected date is a weekend
   if (isWeekend(selectedDate)) {
-    setDateError('Weekends (Saturday and Sunday) cannot be selected. Please choose a weekday.');
+    setDateError('Weekends cannot be selected. Please choose a weekday.');
     return;
   }
   

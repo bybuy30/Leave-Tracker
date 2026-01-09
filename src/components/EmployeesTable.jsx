@@ -129,7 +129,7 @@ export const EmployeesTable = ({ employees, onRowClick, searchTerm = '', onDelet
                     <td className="px-6 py-4 text-sm text-gray-600">{employee.designation}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{employee.nationality}</td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                      <span className="inline-block px-3 py-1 rounded-full text-blue-800 font-semibold">
                         {calculateTotalLeavesRemaining(employee)}
                       </span>
                     </td>

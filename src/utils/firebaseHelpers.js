@@ -375,7 +375,7 @@ export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, ad
   // Check if the start date is a weekend
   const startDate = new Date(dateKey);
   if (isWeekend(startDate)) {
-    throw new Error("Holidays cannot be assigned on weekends (Saturday and Sunday). Please select a weekday.");
+    throw new Error("Holidays cannot be assigned on weekends. Please select a weekday.");
   }
 
   const employeeRef = doc(db, "employees", employeeId);

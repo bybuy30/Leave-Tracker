@@ -24,6 +24,52 @@ const buildDefaultLeaves = () => ({
 });
 
 /**
+ * Check if a date is a weekend
+ * @param {Date} date - The date to check
+ * @returns {boolean} - True if the date is Saturday or Sunday
+ */
+const isWeekend = (date) => {
+  const dayOfWeek = date.getUTCDay();
+  return dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
+};
+
+/**
+ * Generate dates for a leave range, excluding weekends
+ * @param {string} dateKey - Start date in YYYY-MM-DD format
+ * @param {number} consecutiveDays - Number of working days to allocate
+ * @returns {string[]} - Array of date strings excluding weekends
+ */
+const generateLeaveDatesExcludingWeekends = (dateKey, consecutiveDays) => {
+  const dates = [];
+  const startDate = new Date(dateKey);
+  let currentDate = new Date(startDate);
+  
+  // First, check if the start date is a weekend
+  if (isWeekend(currentDate)) {
+    // Skip to the next Monday if start date is weekend
+    const dayOfWeek = currentDate.getUTCDay();
+    if (dayOfWeek === 6) { // Saturday
+      currentDate.setUTCDate(currentDate.getUTCDate() + 2); // Move to Monday
+    } else if (dayOfWeek === 0) { // Sunday
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1); // Move to Monday
+    }
+  }
+  
+  // Generate dates for the specified number of working days
+  let workingDaysAdded = 0;
+  while (workingDaysAdded < consecutiveDays) {
+    if (!isWeekend(currentDate)) {
+      const currentDateKey = currentDate.toISOString().split('T')[0];
+      dates.push(currentDateKey);
+      workingDaysAdded++;
+    }
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+  }
+  
+  return dates;
+};
+
+/**
  * Check and reset leave cycle if 365 days have passed
  * This function updates the employee document if a new cycle should start
  * @param {string} employeeId - The employee ID
@@ -326,8 +372,17 @@ export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, ad
     throw new Error("Consecutive days must be at least 1.");
   }
 
+  // Check if the start date is a weekend
+  const startDate = new Date(dateKey);
+  if (isWeekend(startDate)) {
+    throw new Error("Holidays cannot be assigned on weekends (Saturday and Sunday). Please select a weekday.");
+  }
+
   const employeeRef = doc(db, "employees", employeeId);
   const now = new Date();
+  
+  // Generate dates excluding weekends
+  const heatmapDates = generateLeaveDatesExcludingWeekends(dateKey, consecutiveDays);
   
   // Create a single log entry with the total duration
   const logEntry = {
@@ -342,16 +397,6 @@ export const allocateLeaveToEmployee = async (employeeId, leaveType, dateKey, ad
     logEntry.holidayDescription = holidayDescription;
   }
   
-  // Generate dates for heatmap update
-  const heatmapDates = [];
-  const startDate = new Date(dateKey);
-  for (let i = 0; i < consecutiveDays; i++) {
-    const currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() + i);
-    const currentDateKey = currentDate.toISOString().split('T')[0];
-    heatmapDates.push(currentDateKey);
-  }
-
   try {
     await runTransaction(db, async (transaction) => {
       const snapshot = await transaction.get(employeeRef);

@@ -18,12 +18,21 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+// Helper to check if a date is a weekend (Saturday = 6, Sunday = 0)
+const isWeekend = (dateString) => {
+  const date = new Date(dateString + 'T00:00:00');
+  const dayOfWeek = date.getUTCDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
+};
+
 export const AllocateLeaveModal = ({ isOpen, onClose, onSubmit, loading, error }) => {
   const [selectedType, setSelectedType] = useState('sick');
   // NEW STATE: To hold the date selected by the user
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
   // NEW STATE: To hold optional public holiday description
   const [holidayName, setHolidayName] = useState('');
+  // NEW STATE: To hold validation error for weekend selection
+  const [dateError, setDateError] = useState('');
 
   const [duration, setDuration] = useState(1);
 
@@ -34,15 +43,34 @@ export const AllocateLeaveModal = ({ isOpen, onClose, onSubmit, loading, error }
       setSelectedDate(getTodayDateString());
       // Reset public holiday name when modal closes
       setHolidayName('');
+      // Reset date error when modal closes
+      setDateError('');
       setDuration(1);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
+const handleDateChange = (newDate) => {
+  setSelectedDate(newDate);
+  if (isWeekend(newDate)) {
+    setDateError('Weekends (Saturday and Sunday) cannot be selected. Please choose a weekday.');
+  } else {
+    setDateError('');
+  }
+};
+
 const handleSubmit = (event) => {
   event.preventDefault();
+  
+  // Check for all required validations
   if (!selectedType || !selectedDate || duration < 1) return;
+  
+  // Check if selected date is a weekend
+  if (isWeekend(selectedDate)) {
+    setDateError('Weekends (Saturday and Sunday) cannot be selected. Please choose a weekday.');
+    return;
+  }
   
   if (selectedType === 'public' && !holidayName.trim()) {
     return;
@@ -77,11 +105,15 @@ const handleSubmit = (event) => {
               id="leave-date"
               type="date"
               value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-              className="input-field"
+              onChange={(event) => handleDateChange(event.target.value)}
+              className={`input-field ${dateError ? 'border-red-500 focus:ring-red-500' : ''}`}
               disabled={loading}
               required
             />
+            {dateError && (
+              <p className="text-red-500 text-xs mt-1">{dateError}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">Weekdays only (Monday - Friday)</p>
           </div>
 
           <div>
